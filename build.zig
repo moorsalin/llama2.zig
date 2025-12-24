@@ -15,13 +15,15 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "llama2",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
+    const root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    const exe = b.addExecutable(.{
+        .name = "llama2",
+        .root_module = root_module,
     });
 
     const disable_strip = b.option(bool, "nostrip", "Disable stripping binaries, default is to strip release binaries") orelse false;
@@ -61,10 +63,14 @@ pub fn build(b: *std.Build) void {
 
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
-    const unit_tests = b.addTest(.{
+    const test_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    const unit_tests = b.addTest(.{
+        .root_module = test_module,
     });
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
