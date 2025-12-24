@@ -753,7 +753,9 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
-    const stdout = std.io.getStdOut().writer();
+//     const stdout = std.io.getStdOut().writer();
+    const stdout = std.fs.File.stdout();
+
 
     const args = try std.process.argsAlloc(allocator);
     if (args.len < 2) {
@@ -861,7 +863,9 @@ pub fn main() !void {
     // read the config from the checkpoint
     var checkpoint = try std.fs.cwd().openFile(bin_path.?, .{});
     // close by hand
-    var config_read: ConfigReader = try checkpoint.reader().readStruct(ConfigReader);
+    var config_read: ConfigReader = try checkpoint.deprecatedReader().readStruct(ConfigReader);
+
+//     var deprecated = std.Io.DeprecatedReader.reader().readStruct(checkpoint);
     // negative vocab size is hacky way of signaling unshared weights. bit yikes.
     const shared_weights: bool = config_read.vocab_size > 0;
     config_read.vocab_size = @intCast(@abs(config_read.vocab_size));
