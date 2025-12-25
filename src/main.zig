@@ -172,8 +172,8 @@ const Tokenizer = struct {
         var token_file = try std.fs.cwd().openFile(path, .{});
         defer token_file.close();
         var buffer: [4096]u8 = undefined;
-        const file_reader = token_file.reader(&buffer);
-        const tokens = try Tokenizer.init(file_reader, allocator, vocab_size);
+        var file_reader = token_file.reader(&buffer);
+        const tokens = try Tokenizer.init(&file_reader, allocator, vocab_size);
         return tokens;
     }
 
@@ -181,13 +181,24 @@ const Tokenizer = struct {
         var tokens: Tokenizer = undefined;
         tokens.tokens = try allocator.alloc([]u8, vocab_size);
         tokens.scores = try allocator.alloc(f32, vocab_size);
-        tokens.max_token_len = try reader.readInt(@TypeOf(tokens.max_token_len), .little);
+        const LenType = @TypeOf(tokens.max_token_len);
+        var len_bytes: [@sizeOf(LenType)]u8 = undefined;
+        try reader.interface.readSliceAll(&len_bytes);
+        tokens.max_token_len = std.mem.readInt(LenType, &len_bytes, .little);
 
         for (0..vocab_size) |i| {
-            tokens.scores[i] = @bitCast(try reader.readInt(u32, .little));
-            const token_len = try reader.readInt(u32, .little);
+            var score_bytes: [4]u8 = undefined;
+            try reader.interface.readSliceAll(&score_bytes);
+
+            const score_u32 = std.mem.readInt(u32, &score_bytes, .little);
+            tokens.scores[i] = @bitCast(score_u32);
+
+            var token_len_bytes: [4]u8 = undefined;
+            try reader.interface.readSliceAll(&token_len_bytes);
+            const token_len = std.mem.readInt(u32, &token_len_bytes, .little);
+
             tokens.tokens[i] = try allocator.alloc(u8, token_len);
-            try reader.readNoEof(tokens.tokens[i]);
+            try reader.interface.readSliceAll(tokens.tokens[i]);
         }
 
         return tokens;
