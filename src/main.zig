@@ -171,8 +171,9 @@ const Tokenizer = struct {
     fn fromFile(path: []const u8, vocab_size: usize, allocator: Allocator) !Tokenizer {
         var token_file = try std.fs.cwd().openFile(path, .{});
         defer token_file.close();
-        var buf_reader = std.io.bufferedReader(token_file.reader());
-        const tokens = try Tokenizer.init(buf_reader.reader(), allocator, vocab_size);
+        var buffer: [4096]u8 = undefined;
+        const file_reader = token_file.reader(&buffer);
+        const tokens = try Tokenizer.init(file_reader, allocator, vocab_size);
         return tokens;
     }
 
