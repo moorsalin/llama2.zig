@@ -4,7 +4,7 @@ const assert = std.debug.assert;
 const ThreadPool = std.Thread.Pool;
 
 const DEFAULT_VECTOR_WIDTH: usize = std.simd.suggestVectorLength(f32) orelse 4;
-const simd_align : comptime_int = @alignOf(@Vector(DEFAULT_VECTOR_WIDTH, f32));
+const simd_align: comptime_int = @alignOf(@Vector(DEFAULT_VECTOR_WIDTH, f32));
 const simd_alignment = std.mem.Alignment.of(@Vector(DEFAULT_VECTOR_WIDTH, f32));
 
 comptime {
@@ -81,7 +81,7 @@ const Weights = struct {
 
         var weights: Weights = undefined;
 
-        var ptr: [*]f32 = @alignCast(@ptrCast(data));
+        var ptr: [*]f32 = @ptrCast(@alignCast(data));
         weights.token_embedding_table = ptr;
         ptr += vocab_size * dim;
         weights.rms_att_weight = ptr;
@@ -764,7 +764,7 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
-//     const stdout = std.io.getStdOut().writer();
+    //     const stdout = std.io.getStdOut().writer();
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
@@ -880,7 +880,7 @@ pub fn main() !void {
     // close by hand
     var config_read: ConfigReader = try checkpoint.deprecatedReader().readStruct(ConfigReader);
 
-//     var deprecated = std.Io.DeprecatedReader.reader().readStruct(checkpoint);
+    //     var deprecated = std.Io.DeprecatedReader.reader().readStruct(checkpoint);
     // negative vocab size is hacky way of signaling unshared weights. bit yikes.
     const shared_weights: bool = config_read.vocab_size > 0;
     config_read.vocab_size = @intCast(@abs(config_read.vocab_size));
@@ -896,8 +896,8 @@ pub fn main() !void {
 
     const data: []align(std.heap.page_size_min) u8 = blk: {
         const weights_size: usize = file_size - @sizeOf(ConfigReader);
-//         const buffer = try allocator.alignedAlloc(u8, std.heap.page_size_min, weights_size);
-//         const page_size = std.heap.pageSize();
+        //         const buffer = try allocator.alignedAlloc(u8, std.heap.page_size_min, weights_size);
+        //         const page_size = std.heap.pageSize();
         const alignment = comptime std.mem.Alignment.fromByteUnits(std.heap.page_size_min);
         const buffer = try allocator.alignedAlloc(u8, alignment, weights_size);
         const read_len = try checkpoint.readAll(buffer);
