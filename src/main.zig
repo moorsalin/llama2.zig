@@ -765,12 +765,14 @@ pub fn main() !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 //     const stdout = std.io.getStdOut().writer();
-    const stdout = std.fs.File.stdout();
-
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
 
     const args = try std.process.argsAlloc(allocator);
     if (args.len < 2) {
         try stdout.writeAll(usage_text);
+        try stdout.flush();
         return;
     }
 
@@ -788,6 +790,7 @@ pub fn main() !void {
         const arg = args[arg_i];
         if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
             try stdout.writeAll(usage_text);
+            try stdout.flush();
             return std.process.cleanExit();
         }
         if (!std.mem.startsWith(u8, arg, "-")) {
@@ -867,6 +870,7 @@ pub fn main() !void {
         } else {
             std.debug.print("error: unknown argument '{s}'\n", .{arg});
             try stdout.writeAll(usage_text);
+            try stdout.flush();
             return std.process.cleanExit();
         }
     }
@@ -983,6 +987,7 @@ pub fn main() !void {
         if (timer == null) {
             timer = try std.time.Timer.start();
         }
+        try stdout.flush();
     }
     const time = timer.?.read();
     const tokens_per_ms = @as(f64, @floatFromInt(pos - 1)) / @as(f64, @floatFromInt(time / std.time.ns_per_ms));
