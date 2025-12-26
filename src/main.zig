@@ -4,7 +4,8 @@ const assert = std.debug.assert;
 const ThreadPool = std.Thread.Pool;
 
 const DEFAULT_VECTOR_WIDTH: usize = std.simd.suggestVectorLength(f32) orelse 4;
-const simd_align = std.mem.Alignment.of(@Vector(DEFAULT_VECTOR_WIDTH, f32));
+const simd_align : comptime_int = @alignOf(@Vector(DEFAULT_VECTOR_WIDTH, f32));
+const simd_alignment = std.mem.Alignment.of(@Vector(DEFAULT_VECTOR_WIDTH, f32));
 
 comptime {
     @setFloatMode(.optimized);
@@ -131,23 +132,22 @@ const RunState = struct {
     // kv cache
     key_cache: []align(simd_align) f32, // (layer, seq_len, dim)
     value_cache: []align(simd_align) f32, // (layer, seq_len, dim)
-
     fn init(allocator: Allocator, config: *const Config) !Self {
         const kv_dim = (config.dim * config.n_kv_heads) / config.n_heads;
         return Self{
-            .x = try allocator.alignedAlloc(f32, simd_align, config.dim),
-            .xb = try allocator.alignedAlloc(f32, simd_align, config.dim),
-            .xb2 = try allocator.alignedAlloc(f32, simd_align, config.dim),
-            .hb = try allocator.alignedAlloc(f32, simd_align, config.hidden_dim),
-            .hb2 = try allocator.alignedAlloc(f32, simd_align, config.hidden_dim),
-            .q = try allocator.alignedAlloc(f32, simd_align, config.dim),
-            .k = try allocator.alignedAlloc(f32, simd_align, kv_dim),
-            .v = try allocator.alignedAlloc(f32, simd_align, kv_dim),
-            .att = try allocator.alignedAlloc(f32, simd_align, config.n_heads * config.seq_len),
-            .logits = try allocator.alignedAlloc(f32, simd_align, config.vocab_size),
-            .logits_indexed = try allocator.alignedAlloc(IndexedF32, simd_align, config.vocab_size),
-            .key_cache = try allocator.alignedAlloc(f32, simd_align, config.n_layers * config.seq_len * kv_dim),
-            .value_cache = try allocator.alignedAlloc(f32, simd_align, config.n_layers * config.seq_len * kv_dim),
+            .x = try allocator.alignedAlloc(f32, simd_alignment, config.dim),
+            .xb = try allocator.alignedAlloc(f32, simd_alignment, config.dim),
+            .xb2 = try allocator.alignedAlloc(f32, simd_alignment, config.dim),
+            .hb = try allocator.alignedAlloc(f32, simd_alignment, config.hidden_dim),
+            .hb2 = try allocator.alignedAlloc(f32, simd_alignment, config.hidden_dim),
+            .q = try allocator.alignedAlloc(f32, simd_alignment, config.dim),
+            .k = try allocator.alignedAlloc(f32, simd_alignment, kv_dim),
+            .v = try allocator.alignedAlloc(f32, simd_alignment, kv_dim),
+            .att = try allocator.alignedAlloc(f32, simd_alignment, config.n_heads * config.seq_len),
+            .logits = try allocator.alignedAlloc(f32, simd_alignment, config.vocab_size),
+            .logits_indexed = try allocator.alignedAlloc(IndexedF32, simd_alignment, config.vocab_size),
+            .key_cache = try allocator.alignedAlloc(f32, simd_alignment, config.n_layers * config.seq_len * kv_dim),
+            .value_cache = try allocator.alignedAlloc(f32, simd_alignment, config.n_layers * config.seq_len * kv_dim),
         };
     }
 
