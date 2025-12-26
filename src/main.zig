@@ -227,7 +227,7 @@ const Tokenizer = struct {
     /// responsible for freeing the returned list.
     fn encode(self: *const Tokenizer, input: []const u8, allocator: Allocator) ![]u32 {
         var token_buf: []u32 = try allocator.alloc(u32, input.len); // worst case is every byte is a token
-
+        errdefer allocator.free(token_buf);
         const max_allowed_token_len = 128;
         if (self.max_token_len * 2 > max_allowed_token_len) { // x2 for concat
             return error.TokensTooLong;
@@ -286,9 +286,7 @@ const Tokenizer = struct {
             }
         }
 
-        if (!allocator.resize(token_buf, token_end_idx)) {
-            return error.OutOfMemory;
-        }
+        token_buf = try allocator.realloc(token_buf, token_end_idx);
         return token_buf[0..token_end_idx];
     }
 };
@@ -764,7 +762,6 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
-    //     const stdout = std.io.getStdOut().writer();
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
@@ -896,8 +893,6 @@ pub fn main() !void {
 
     const data: []align(std.heap.page_size_min) u8 = blk: {
         const weights_size: usize = file_size - @sizeOf(ConfigReader);
-        //         const buffer = try allocator.alignedAlloc(u8, std.heap.page_size_min, weights_size);
-        //         const page_size = std.heap.pageSize();
         const alignment = comptime std.mem.Alignment.fromByteUnits(std.heap.page_size_min);
         const buffer = try allocator.alignedAlloc(u8, alignment, weights_size);
         const read_len = try checkpoint.readAll(buffer);
