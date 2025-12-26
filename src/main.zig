@@ -4,7 +4,7 @@ const assert = std.debug.assert;
 const ThreadPool = std.Thread.Pool;
 
 const DEFAULT_VECTOR_WIDTH: usize = std.simd.suggestVectorLength(f32) orelse 4;
-const simd_align = @alignOf(@Vector(DEFAULT_VECTOR_WIDTH, f32));
+const simd_align = std.mem.Alignment.of(@Vector(DEFAULT_VECTOR_WIDTH, f32));
 
 comptime {
     @setFloatMode(.optimized);
